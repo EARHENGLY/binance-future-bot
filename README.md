@@ -1,20 +1,18 @@
 # Binance-future-bot | EXPERIMENT 
 
-WARNING : USE IT WITH YOUR OWN RISKS, THE CODE IS UNDER CONSTRUCTION, MAKE SURE CHECK THE CODE BEFORE USING. 
+Warning : use it with your own risks, the code is under construction, make sure check the code before using. 
 
 
-THE BOT CAN BE CONTROL BY TELEGRAM TO START STOP RESTART IF YOU ARE RUNNING THE BOT ON VPS 
+the bot can be control by telegram to start stop restart if you are running the bot on vps 
 
-CHECK THE CONFIG FILE CHANGE THE BINANCE API KEY
+check the config file change the binance api key
 
-THE BOT USING 5 STRATEGY :
-1. ICT BIAS 
-2. SMART MONEY CONSEPTS
-3. SUPER TREND
-4. ALLIGATOR BOLLINGER BANDS
-5. PIVOTE POINTS INTEGRATED WITH SUPERTREND
-
-
+the bot using 5 strategy :
+1. ict bias 
+2. smart money consepts
+3. super trend
+4. alligator bollinger bands
+5. pivote points integrated with supertrend
 
 
 
