@@ -7,86 +7,12 @@ import ta
 import time
 import talib
 
-
-
 # Initialize Binance client
 client = Client(api_key, api_secret)
 
 
-# Get the current price for the symbol.
-def get_current_price(symbol):
-    client = Client()  # create a new Binance API client instance
-    ticker = client.get_symbol_ticker(symbol=symbol)  # get the ticker for the given symbol
-    if 'price' not in ticker:
-        raise ValueError(f"Failed to retrieve current price for symbol {symbol}")
-    return float(ticker['price'])
-
-
-
-
-
-
-
-# STRATEGIES ///////////////  BELOW  /////////////////////
-#All Strategy Return As Neutral Buy and Sell
-
-
-#Determines Inner Circle Trader bias for a symbol based on the EMA indicators.
-def get_ict_bias(symbol: str) -> str:
-    """
-    Args:
-        symbol (str): The symbol to get the bias for.
-    Returns:
-        str: The bias of the symbol (either 'Bullish', 'Bearish', or 'Neutral').
-    """
-    # Retrieve the historical klines for the symbol.
-    klines = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
-    # Extract the closing prices from the klines.
-    closes = np.array([float(kline[4]) for kline in klines])
-    # Calculate the 12, 50, and 200 period EMAs.
-    ema_12 = talib.EMA(closes, timeperiod=12)
-    ema_50 = talib.EMA(closes, timeperiod=50)
-    ema_200 = talib.EMA(closes, timeperiod=200)
-    # Get the current price for the symbol.
-    current_price = get_current_price(symbol)
-    # Determine the bias based on the EMA indicators and current price.
-    if current_price > ema_12[-1] and ema_12[-1] > ema_50[-1] and ema_50[-1] > ema_200[-1]:
-        return 'Bullish'
-    elif current_price < ema_12[-1] and ema_12[-1] < ema_50[-1] and ema_50[-1] < ema_200[-1]:
-        return 'Bearish'
-    else:
-        return 'Neutral'
-    
-
-
-#Determines Smart Money Consepts
-def get_smart_money_signal(symbol: str, limit: int = 500) -> str:
-    """Function to get the Smart Money signal for a symbol"""
-    klines = client.futures_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=limit)
-    df = pd.DataFrame(klines, columns=['Open time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close time', 'Quote asset volume',
-                                    'Number of trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Ignore'])
-    df = df[['Open time', 'Open', 'High', 'Low', 'Close', 'Volume']]
-    df[['Open', 'High', 'Low', 'Close', 'Volume']] = df[['Open', 'High', 'Low', 'Close', 'Volume']].apply(pd.to_numeric)
-    typical_price = (df['High'] + df['Low'] + df['Close']) / 3
-    direction = df['Close'] - df['Open']
-    force = typical_price * df['Volume'] * direction
-    force_ema = pd.Series.ewm(force, span=13).mean()
-    volume_ema = pd.Series.ewm(df['Volume'], span=13).mean()
-    smi = force_ema / volume_ema
-    sma20 = pd.Series.rolling(df['Close'], window=20).mean()
-    sma200 = pd.Series.rolling(df['Close'], window=200).mean()
-    last_smi, last_sma20, last_sma200 = smi.iloc[-1], sma20.iloc[-1], sma200.iloc[-1]
-    if last_smi > 0 and last_sma20 > last_sma200:
-        return 'Buy'
-    elif last_smi < 0 and last_sma20 < last_sma200:
-        return 'Sell'
-    else:
-        return 'Neutral'
-    
-
-
-
-#Determines Super Trend
+# STRATEGIES ////////////////////
+# Super Trend
 def get_super_trend_direction(symbol):
     klines = client.futures_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
     close_prices = np.array([float(entry[4]) for entry in klines])
@@ -123,15 +49,13 @@ def get_super_trend_direction(symbol):
             st_upper[i] = hl2[i] - hl2_atr[i]
             st_lower[i] = hl2[i] + hl2_atr[i]
     if st_signal[-1] == 'Buy':
-        return 'Bullish'
+        return 'BUY'
     elif st_signal[-1] == 'Sell':
-        return 'Bearish'
+        return 'SELL'
     else:
-        return 'Neutral'
+        return 'NEUTRAL'
     
-
-
-#Determines Alligator
+# Alligator
 def get_alligator_direction(symbol):
     klines = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
     df = pd.DataFrame(klines, columns=['Open time', 'Open', 'High', 'Low', 'Close', 'Volume', 'Close time', 'Quote asset volume', 'Number of trades', 'Taker buy base asset volume', 'Taker buy quote asset volume', 'Ignore'])
@@ -146,10 +70,7 @@ def get_alligator_direction(symbol):
     else:
         return 'NEUTRAL'
     
-
-
-
-#Determines Pivot Point with Super Trend
+# Pivot Point with Super Trend
 def get_pivot_point_supertrend_direction(symbol):
     klines = client.get_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
     high_prices = [float(kline[2]) for kline in klines]
@@ -178,3 +99,94 @@ def get_pivot_point_supertrend_direction(symbol):
         return 'SELL'
     else:
         return 'NEUTRAL'
+
+
+def get_ema_crossover_direction(symbol):
+    klines = client.futures_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
+
+    # Extract the relevant OHLCV data from the klines
+    ohlcv_data = []
+    for kline in klines:
+        open_time = pd.to_datetime(kline[0], unit='ms')
+        close_time = pd.to_datetime(kline[6], unit='ms')
+        open_price = float(kline[1])
+        high_price = float(kline[2])
+        low_price = float(kline[3])
+        close_price = float(kline[4])
+        volume = float(kline[5])
+        ohlcv_data.append([open_time, close_time, open_price, high_price, low_price, close_price, volume])
+
+    # Create a pandas DataFrame from the OHLCV data
+    df = pd.DataFrame(ohlcv_data, columns=['OpenTime', 'CloseTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    df.set_index('CloseTime', inplace=True)
+
+    # Calculate the 50-period and 200-period EMA
+    ema_50 = ta.trend.ema_indicator(close=df['Close'], window=50)
+    ema_200 = ta.trend.ema_indicator(close=df['Close'], window=200)
+
+    # Determine the direction based on the crossover of EMA50 and EMA200
+    latest_ema_50 = ema_50.iloc[-1]
+    latest_ema_200 = ema_200.iloc[-1]
+    previous_ema_50 = ema_50.iloc[-2]
+    previous_ema_200 = ema_200.iloc[-2]
+
+    if latest_ema_50 > latest_ema_200 and previous_ema_50 <= previous_ema_200:
+        return 'BUY'
+    elif latest_ema_50 < latest_ema_200 and previous_ema_50 >= previous_ema_200:
+        return 'SELL'
+    else:
+        return 'NEUTRAL'
+
+
+def get_stop_loss_price_hl(symbol, position_direction): #Get SL TP by last amount candle
+    klines = client.futures_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_1MINUTE, limit=500)
+
+    # Extract the relevant OHLCV data from the klines
+    ohlcv_data = []
+    for kline in klines:
+        open_time = pd.to_datetime(kline[0], unit='ms')
+        close_time = pd.to_datetime(kline[6], unit='ms')
+        open_price = float(kline[1])
+        high_price = float(kline[2])
+        low_price = float(kline[3])
+        close_price = float(kline[4])
+        volume = float(kline[5])
+        ohlcv_data.append([open_time, close_time, open_price, high_price, low_price, close_price, volume])
+
+    # Create a pandas DataFrame from the OHLCV data
+    df = pd.DataFrame(ohlcv_data, columns=['OpenTime', 'CloseTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    df.set_index('CloseTime', inplace=True)
+
+    if position_direction == 'LONG':
+        stop_loss_price_hl = df['Low'].tail(50).min()   # tail amount candle
+    elif position_direction == 'SHORT':
+        stop_loss_price_hl = df['High'].tail(50).max()    # tail amount candle
+    elif position_direction == 'NEUTRAL':
+        stop_loss_price_hl = 0
+    return stop_loss_price_hl
+
+
+def get_high_low(symbol):  #Get Support Resistance
+    klines = client.futures_klines(symbol=symbol, interval=Client.KLINE_INTERVAL_5MINUTE, limit=500)
+
+    # Extract the relevant OHLCV data from the klines
+    ohlcv_data = []
+    for kline in klines:
+        open_time = pd.to_datetime(kline[0], unit='ms')
+        close_time = pd.to_datetime(kline[6], unit='ms')
+        open_price = float(kline[1])
+        high_price = float(kline[2])
+        low_price = float(kline[3])
+        close_price = float(kline[4])
+        volume = float(kline[5])
+        ohlcv_data.append([open_time, close_time, open_price, high_price, low_price, close_price, volume])
+
+    # Create a pandas DataFrame from the OHLCV data
+    df = pd.DataFrame(ohlcv_data, columns=['OpenTime', 'CloseTime', 'Open', 'High', 'Low', 'Close', 'Volume'])
+    df.set_index('CloseTime', inplace=True)
+
+    # Calculate the support and resistance levels
+    low = df['Low'].min()
+    high = df['High'].max()
+
+    return high, low 
