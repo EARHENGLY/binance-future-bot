@@ -16,7 +16,10 @@ Strategy:
 2. Super trend
 3. alligator bollinger bands
 4. pivote points integrated with supertrend
+   
+Contact: t.me/earhengly
+If you make some cool logic with these base foundation code, 
+let me know if you do. I'd love to see what you build :)
 
-t.me/earhengly
 
 
