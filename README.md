@@ -1,19 +1,22 @@
-# Binance-future-bot | EXPERIMENT 
+# Binance-future-bot | EXPERIMENTAL
 
-Warning : use it with your own risks, the code is under construction, make sure check the code before using. 
+Warning : , the code is under construction, use it with your own risks.
+Make sure check the code before running. 
+The bot can be control by telegram to start stop restart if you are running the bot on vps 
 
+Set configuration at config.py 
+Implement strategy in strategy.py
+Conditions logic at trading_bot.py
 
-the bot can be control by telegram to start stop restart if you are running the bot on vps 
+Under Development:
+Order control and Logics
 
-check the config file change the binance api key
+Strategy:
+1. EMA
+2. Super trend
+3. alligator bollinger bands
+4. pivote points integrated with supertrend
 
-the bot using 5 strategy :
-1. ict bias 
-2. smart money consepts
-3. super trend
-4. alligator bollinger bands
-5. pivote points integrated with supertrend
-
-
+t.me/earhengly
 
 
